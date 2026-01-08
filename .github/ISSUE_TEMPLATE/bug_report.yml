@@ -1,0 +1,100 @@
+name: 버그 리포트
+description: 버그를 발견하셨나요? 알려주세요
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        버그를 신고해주셔서 감사합니다! 아래 양식을 채워주세요.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 버그 설명
+      description: 발견한 버그에 대해 명확하고 간결하게 설명해주세요
+      placeholder: "예: 앱을 시작할 때 크래시가 발생합니다"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 방법
+      description: 버그를 재현하는 단계를 알려주세요
+      placeholder: |
+        1. '...' 로 이동
+        2. '....'를 클릭
+        3. '....'까지 스크롤
+        4. 오류 발생
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 예상 동작
+      description: 어떻게 동작해야 하나요?
+      placeholder: "예: 앱이 정상적으로 실행되어야 합니다"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 동작
+      description: 실제로 어떻게 동작하나요?
+      placeholder: "예: 앱이 크래시되고 에러 메시지가 표시됩니다"
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 스크린샷
+      description: 가능하다면 스크린샷을 첨부해주세요
+      placeholder: 여기에 스크린샷을 드래그하거나 붙여넣기 하세요
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 운영체제
+      description: 어떤 운영체제를 사용하고 계신가요?
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - 기타
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 앱 버전
+      description: keycast 버전을 알려주세요
+      placeholder: "예: 0.1.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 추가 정보
+      description: 버그에 대한 추가 정보가 있나요?
+      placeholder: 로그, 에러 메시지 등을 첨부해주세요
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 체크리스트
+      description: 아래 항목을 확인해주세요
+      options:
+        - label: 중복된 이슈가 없는지 확인했습니다
+          required: true
+        - label: 최신 버전에서 발생하는 문제입니다
+          required: true

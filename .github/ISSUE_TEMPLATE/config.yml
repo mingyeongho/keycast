@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 질문 및 토론
+    url: https://github.com/mingyeongho/keycast/discussions
+    about: 질문이나 아이디어에 대해 토론하고 싶다면 Discussions를 이용해주세요
