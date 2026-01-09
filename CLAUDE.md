@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Keycast is a desktop application built with Tauri v2, React 19, TypeScript, and Tailwind CSS v4. It uses pnpm for package management.
 
+The application features a **Raycast-style transparent UI** with:
+- Frameless window design (no OS decorations)
+- Semi-transparent background with backdrop blur effects
+- Centered window positioning
+- macOS-specific visual effects using private APIs
+
 ## Architecture
 
 ### Frontend (React/TypeScript)
@@ -69,6 +75,32 @@ The project uses strict TypeScript settings:
 ## Build Process
 
 Frontend build outputs to `dist/`, which Tauri bundles as `frontendDist` in the final application.
+
+## UI/UX Architecture
+
+### Transparent Window Setup
+
+The application implements a Raycast-style transparent UI with the following configuration:
+
+**Tauri Configuration (`tauri.conf.json`):**
+- `"label": "main"` - Required for programmatic window access
+- `"transparent": true` - Enables window transparency
+- `"decorations": false` - Removes OS window frame
+- `"center": true` - Centers window on screen
+- `"resizable": false` - Fixed size window
+- `"macOSPrivateApi": true` - Enables macOS-specific features
+
+**CSS Implementation:**
+- Use `backdrop-filter: blur()` for background blur effects
+- Prefix with `-webkit-backdrop-filter` for WebKit compatibility
+- Semi-transparent backgrounds with `bg-{color}/{opacity}` in Tailwind
+- `data-tauri-drag-region` attribute on elements to enable window dragging
+
+**Important Notes:**
+- Window must have `"label": "main"` in config to be accessed via `get_webview_window("main")`
+- CSS `background: transparent` on `html`, `body`, `#root` is required for transparency
+- Backdrop blur works best when combined with semi-transparent backgrounds (e.g., `bg-slate-600/90`)
+- For advanced macOS blur effects, consider using `window-vibrancy` crate with `NSVisualEffectMaterial`
 
 ## Git Commit Guidelines
 
