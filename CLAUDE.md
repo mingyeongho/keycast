@@ -25,12 +25,27 @@ The application features a **Raycast-style transparent UI** with:
 ### Backend (Rust/Tauri)
 - **Entry point**: `src-tauri/src/main.rs` (calls `keycast_lib::run()`)
 - **Application logic**: `src-tauri/src/lib.rs`
+- **Command module**: `src-tauri/src/command.rs` (show/hide commands)
+- **Window module**: `src-tauri/src/window.rs` (NSPanel and multi-monitor support)
 - **Library name**: `keycast_lib` (suffixed to avoid Windows naming conflicts)
-- **Plugins**: `tauri-plugin-opener` for opening URLs/files
 - **Build script**: `src-tauri/build.rs`
 
+**Plugins:**
+- `tauri-nspanel` - macOS NSPanel implementation for Spotlight-style panel
+- `tauri-plugin-global-shortcut` - Global keyboard shortcut support
+- `monitor` (tauri-toolkit) - Multi-monitor cursor detection
+
+**Module Organization:**
+- `src-tauri/src/lib.rs`: App initialization, plugin setup, global shortcut handler
+- `src-tauri/src/command.rs`: Tauri commands (show/hide panel)
+- `src-tauri/src/window.rs`: NSPanel conversion trait and multi-monitor positioning
+
 ### Tauri Commands
-Rust functions are exposed to the frontend using the `#[tauri::command]` macro. These are registered in `src-tauri/src/lib.rs` via `invoke_handler`. Example command: `greet(name: &str) -> String`
+Rust functions are exposed to the frontend using the `#[tauri::command]` macro. These are registered in `src-tauri/src/lib.rs` via `invoke_handler`.
+
+**Available Commands:**
+- `show(app_handle: AppHandle)` - Shows the panel and makes it the key window
+- `hide(app_handle: AppHandle)` - Hides the panel if visible
 
 ## Development Commands
 
@@ -59,10 +74,30 @@ Note: `pnpm tauri dev` runs `pnpm dev` automatically (configured in `tauri.conf.
 
 ## Frontend-Backend Communication
 
-1. Define Rust command in `src-tauri/src/lib.rs` with `#[tauri::command]`
-2. Register command in `.invoke_handler(tauri::generate_handler![command_name])`
+**Command Registration Flow:**
+1. Define Rust command in a module (e.g., `src-tauri/src/command.rs`) with `#[tauri::command]`
+2. Add command to `.invoke_handler(tauri::generate_handler![command::show, command::hide])` in `lib.rs`
 3. Import `invoke` from `@tauri-apps/api/core` in React components
 4. Call via `await invoke('command_name', { args })`
+
+**Example:**
+```rust
+// src-tauri/src/command.rs
+#[tauri::command]
+pub fn hide(app_handle: AppHandle) {
+    let panel = app_handle.get_webview_panel(KEYCAST_LABEL).unwrap();
+    if panel.is_visible() {
+        panel.hide();
+    }
+}
+```
+
+```typescript
+// src/hooks/useEscape.ts
+import { invoke } from "@tauri-apps/api/core";
+
+invoke("hide");
+```
 
 ## TypeScript Configuration
 
@@ -78,17 +113,48 @@ Frontend build outputs to `dist/`, which Tauri bundles as `frontendDist` in the 
 
 ## UI/UX Architecture
 
-### Transparent Window Setup
+### NSPanel-Based Spotlight Panel
 
-The application implements a Raycast-style transparent UI with the following configuration:
+The application uses macOS NSPanel (via `tauri-nspanel`) to create a Spotlight-style floating panel with advanced window management.
+
+**Key Architecture Components:**
+
+1. **Panel Conversion** (`src-tauri/src/window.rs:43-86`)
+   - `WebviewWindowExt::to_spotlight_panel()` converts standard Tauri window to NSPanel
+   - Sets `PanelLevel::Floating` to keep panel above other windows
+   - Configures `CollectionBehavior` for full-screen app support and active space tracking
+   - Uses `StyleMask::nonactivating_panel()` to prevent app activation in Dock
+
+2. **Multi-Monitor Support** (`src-tauri/src/window.rs:89-120`)
+   - `center_at_cursor_monitor()` detects which monitor contains the cursor
+   - Automatically centers panel on the active monitor
+   - Uses `monitor` crate from tauri-toolkit for cursor detection
+
+3. **Global Shortcut Handler** (`src-tauri/src/lib.rs:18-46`)
+   - Listens for `Cmd+Shift+;` (SUPER + SHIFT + Semicolon)
+   - Toggles panel visibility
+   - Lazy panel conversion: converts window to NSPanel on first activation
+   - Automatically centers panel at cursor position before showing
+
+4. **Auto-Hide Behavior** (`src-tauri/src/window.rs:73-82`)
+   - Panel automatically hides when it loses key window status (user clicks outside)
+   - Implemented via `SpotlightPanelEventHandler::window_did_resign_key()`
+
+5. **ESC Key Handler** (`src/hooks/useEscape.ts`)
+   - React hook that calls `hide` command when ESC is pressed
+   - Provides keyboard-based dismissal
 
 **Tauri Configuration (`tauri.conf.json`):**
-- `"label": "main"` - Required for programmatic window access
+- `"label": "main"` - Required constant (`KEYCAST_LABEL`) used throughout codebase
 - `"transparent": true` - Enables window transparency
 - `"decorations": false` - Removes OS window frame
-- `"center": true` - Centers window on screen
+- `"center": true` - Initial window positioning
 - `"resizable": false` - Fixed size window
-- `"macOSPrivateApi": true` - Enables macOS-specific features
+- `"macOSPrivateApi": true` - Required for NSPanel features
+
+**Capabilities (`src-tauri/capabilities/desktop.json`):**
+- `"global-shortcut:default"` permission required for keyboard shortcuts
+- Applied to window labeled "main"
 
 **CSS Implementation:**
 - Use `backdrop-filter: blur()` for background blur effects
@@ -96,11 +162,10 @@ The application implements a Raycast-style transparent UI with the following con
 - Semi-transparent backgrounds with `bg-{color}/{opacity}` in Tailwind
 - `data-tauri-drag-region` attribute on elements to enable window dragging
 
-**Important Notes:**
-- Window must have `"label": "main"` in config to be accessed via `get_webview_window("main")`
-- CSS `background: transparent` on `html`, `body`, `#root` is required for transparency
-- Backdrop blur works best when combined with semi-transparent backgrounds (e.g., `bg-slate-600/90`)
-- For advanced macOS blur effects, consider using `window-vibrancy` crate with `NSVisualEffectMaterial`
+**Accessory Mode:**
+- App runs with `ActivationPolicy::Prohibited` on macOS
+- Prevents app from appearing in Dock and menu bar
+- Acts as a background utility accessible only via global shortcut
 
 ## Git Commit Guidelines
 
