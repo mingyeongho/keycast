@@ -1,6 +1,9 @@
 import "./App.css";
+import useEscape from "./hooks/useEscape";
 
 function App() {
+  useEscape();
+
   return (
     <main
       className="min-h-full rounded-lg overflow-hidden bg-zinc-900/30 p-4"
